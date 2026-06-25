@@ -1,0 +1,784 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CookieMice — Your Cooking Companion</title>
+<meta name="description" content="CookieMice is a multilingual cooking assistant with voice chat, recipes, and support for English and major Indian languages." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-1:#fff3e4; --bg-2:#ffe2bb;
+    --card:#fffaf3; --card-solid:#ffffff;
+    --ink:#42271a; --ink-soft:#8a6248;
+    --accent:#ef8b3c; --accent-2:#ef6f8e; --accent-3:#5fb6a4;
+    --accent-grad: linear-gradient(135deg,#ef8b3c,#ef6f8e);
+    --border: rgba(140,90,40,.16);
+    --shadow: 0 14px 32px rgba(150,95,40,.16);
+    --radius: 22px;
+    --bubble-user: linear-gradient(135deg,#ef8b3c,#ef6f8e);
+    --bubble-bot:#fff6ec;
+    --sidebar-w: 340px;
+    --sidebar-w-collapsed: 72px;
+  }
+  [data-theme="dark"]{
+    --bg-1:#231711; --bg-2:#33221a;
+    --card:#2a1d15dd; --card-solid:#2a1d15;
+    --ink:#fbe7d4; --ink-soft:#d6ab84;
+    --border: rgba(255,210,170,.14);
+    --shadow: 0 14px 32px rgba(0,0,0,.45);
+    --bubble-bot:#352419;
+  }
+  #sidebar{
+  width:280px;
+  height:100vh;
+}
+
+.sb-head{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:16px;
+}
+
+.mark{
+  width:48px;
+  height:48px;
+  border-radius:12px;
+  cursor:pointer;
+  object-fit:cover;
+}
+
+.brandbox{
+  flex:1;
+}
+
+.brand-name{
+  font-size:18px;
+  font-weight:700;
+}
+
+.brand-tag{
+  font-size:12px;
+  opacity:.7;
+}
+
+.sb-collapse-btn{
+  width:36px;
+  height:36px;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  font-size:18px;
+}
+
+  .mascot-image{
+  width:220px;
+  max-width:100%;
+  object-fit:contain;
+
+  animation:bob 3s ease-in-out infinite;
+}
+
+@keyframes bob{
+  0%,100%{
+    transform:translateY(0);
+  }
+  50%{
+    transform:translateY(-10px);
+  }
+}
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Inter',system-ui,sans-serif;
+    color:var(--ink);
+    background: radial-gradient(circle at 8% 0%, var(--bg-2), transparent 50%),
+                radial-gradient(circle at 92% 6%, #ffd2a0a0, transparent 45%),
+                var(--bg-1);
+    min-height:100vh;
+    transition: background .4s ease, color .4s ease;
+  }
+  h1,h2,h3,.brand-name{font-family:'Fredoka',sans-serif;}
+  a{color:inherit;}
+
+  /* ============ APP SHELL ============ */
+  .app-shell{ display:flex; min-height:100vh; }
+
+  /* ---------- Sidebar ---------- */
+  #sidebar{
+    width:var(--sidebar-w); flex:0 0 auto;
+    background:var(--card-solid); border-right:1px solid var(--border);
+    display:flex; flex-direction:column;
+    position:sticky; top:0; height:100vh;
+    transition: width .25s ease;
+    overflow:hidden;
+  }
+  #sidebar.collapsed{ width:var(--sidebar-w-collapsed); }
+
+  .sb-head{
+    display:flex; align-items:center; gap:10px; padding:16px 14px;
+    border-bottom:1px solid var(--border); flex:0 0 auto;
+  }
+  .sb-head .mark{ width:38px; height:38px; flex:0 0 auto; cursor:pointer; }
+  .sb-head .brandbox{ display:flex; flex-direction:column; overflow:hidden; white-space:nowrap; }
+  .sb-head .brand-name{ font-size:17px; font-weight:700; line-height:1.1; }
+  .sb-head .brand-tag{ font-size:10.5px; color:var(--ink-soft); font-weight:600; }
+  #sidebar.collapsed .brandbox{ display:none; }
+
+  .sb-collapse-btn{
+    margin-left:auto; border:1px solid var(--border); background:transparent; color:var(--ink-soft);
+    width:30px; height:30px; border-radius:50%; cursor:pointer; display:grid; place-items:center; font-size:14px;
+    flex:0 0 auto;
+  }
+  #sidebar.collapsed .sb-collapse-btn{ display:none; }
+  #sidebar.collapsed .sb-head{ justify-content:center; }
+
+  .sb-newchat{
+    margin:14px; padding:11px 14px; border-radius:14px; border:1px dashed var(--accent);
+    background:transparent; color:var(--accent); font-weight:700; font-size:13.5px; cursor:pointer;
+    display:flex; align-items:center; gap:8px; justify-content:center; flex:0 0 auto;
+  }
+  .sb-newchat:hover{ background:var(--bg-2); }
+  #sidebar.collapsed .sb-newchat span.label{ display:none; }
+  #sidebar.collapsed .sb-newchat{ margin:14px 10px; padding:11px; }
+
+  .sb-section-label{
+    font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--ink-soft); padding:4px 18px; flex:0 0 auto;
+  }
+  #sidebar.collapsed .sb-section-label{ display:none; }
+
+  .sb-history{ flex:0 1 auto; overflow-y:auto; padding:4px 10px 10px; max-height:34vh; }
+  #sidebar.collapsed .sb-history{ display:none; }
+  .sb-conv{
+    padding:10px 12px; border-radius:12px; cursor:pointer; font-size:13px; color:var(--ink);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:3px;
+    display:flex; align-items:center; justify-content:space-between; gap:6px;
+  }
+  .sb-conv:hover{ background:var(--bg-2); }
+  .sb-conv.active{ background:var(--accent-grad); color:#fff; }
+  .sb-conv .del{ opacity:.0; font-size:13px; flex:0 0 auto; }
+  .sb-conv:hover .del{ opacity:.7; }
+  .sb-conv .del:hover{ opacity:1; }
+  .sb-empty{ color:var(--ink-soft); font-size:12px; padding:8px 12px; font-style:italic; }
+
+  .sb-chat-wrap{
+    flex:1 1 auto; display:flex; flex-direction:column; min-height:0;
+    border-top:1px solid var(--border);
+  }
+  #sidebar.collapsed .sb-chat-wrap{ display:none; }
+
+  .sb-chat-head{
+    display:flex; align-items:center; gap:8px; padding:10px 16px; font-size:12px; color:var(--ink-soft); font-weight:700;
+  }
+  .sb-chat-head .dot{ width:7px;height:7px;border-radius:50%; background:var(--accent-3); }
+
+  #chat-body{ flex:1; overflow-y:auto; padding:12px 16px; display:flex; flex-direction:column; gap:12px; }
+  .msg{ max-width:90%; padding:11px 13px; border-radius:16px; font-size:13.5px; line-height:1.5; }
+  .msg.user{ align-self:flex-end; background:var(--bubble-user); color:#fff; border-bottom-right-radius:5px; }
+  .msg.bot{ align-self:flex-start; background:var(--bubble-bot); color:var(--ink); border:1px solid var(--border); border-bottom-left-radius:5px; }
+  .msg.bot h2,.msg.bot h3{ font-size:14px; margin:6px 0; }
+  .msg.bot blockquote{ margin:8px 0 0; padding:8px 10px; background:var(--bg-2); border-left:3px solid var(--accent); border-radius:10px; font-size:12.5px; }
+  .msg.bot ul{ margin:6px 0; padding-left:18px; }
+  .typing{ display:flex; gap:4px; align-self:flex-start; padding:10px 13px; background:var(--bubble-bot); border:1px solid var(--border); border-radius:16px;}
+  .typing span{ width:6px;height:6px;border-radius:50%; background:var(--ink-soft); animation:blink 1.2s infinite; }
+  .typing span:nth-child(2){animation-delay:.2s;} .typing span:nth-child(3){animation-delay:.4s;}
+  @keyframes blink{ 0%,100%{opacity:.2} 50%{opacity:1} }
+
+  .chat-lang-row{ display:flex; gap:6px; padding:8px 14px; overflow-x:auto; border-top:1px solid var(--border); flex:0 0 auto; }
+  .chat-lang-row .chip{ flex:0 0 auto; padding:6px 12px; font-size:11.5px; }
+
+  #chat-input-row{ display:flex; gap:8px; padding:12px 14px; border-top:1px solid var(--border); flex:0 0 auto; }
+  #chat-input{
+    flex:1; border:1px solid var(--border); border-radius:999px; padding:10px 14px; font-size:13.5px;
+    background:var(--bg-1); color:var(--ink); outline:none;
+  }
+  [data-theme="dark"] #chat-input{ background:#1c130e; }
+  .round-btn{
+    width:38px;height:38px;border-radius:50%; border:none; cursor:pointer; display:grid; place-items:center;
+    background:var(--accent-grad); color:#fff; font-size:14px; flex:0 0 auto;
+  }
+  .round-btn.mic.recording{ background:var(--accent-2); box-shadow:0 0 0 6px rgba(239,111,142,.3); animation: pulse 1.2s infinite; }
+  @keyframes pulse{ 0%,100%{box-shadow:0 0 0 4px rgba(239,111,142,.25)} 50%{box-shadow:0 0 0 10px rgba(239,111,142,.1)} }
+  .round-btn.ghost{ background:var(--card-solid); color:var(--ink); border:1px solid var(--border); }
+
+  .sb-bottom-icons{ display:none; flex-direction:column; gap:10px; align-items:center; padding:14px 0; }
+  #sidebar.collapsed .sb-bottom-icons{ display:flex; }
+  .sb-bottom-icons .icon-btn{ width:38px;height:38px; }
+
+  /* ---------- Main content ---------- */
+  #main{ flex:1; min-width:0; }
+  .topbar{
+    position:sticky; top:0; z-index:30;
+    display:flex; align-items:center; justify-content:flex-end;
+    padding:14px 28px;
+    background:var(--card); backdrop-filter: blur(14px);
+    border-bottom:1px solid var(--border);
+  }
+  .topbar-actions{display:flex; align-items:center; gap:10px;}
+  .icon-btn{
+    border:1px solid var(--border); background:var(--card-solid); color:var(--ink);
+    width:40px;height:40px;border-radius:50%; display:grid;place-items:center;
+    cursor:pointer; font-size:16px; transition:.2s;
+  }
+  .icon-btn:hover{ transform: translateY(-2px); box-shadow:var(--shadow); }
+  select.lang-select{
+    appearance:none; border:1px solid var(--border); background:var(--card-solid);
+    color:var(--ink); padding:9px 16px; border-radius:999px; font-weight:600; font-size:13.5px;
+    cursor:pointer;
+  }
+
+  .hero{ max-width:1140px; margin:0 auto; padding:48px 24px 12px; display:grid; grid-template-columns:1.1fr 0.9fr; gap:30px; align-items:center; }
+  .hero .pill{
+    display:inline-flex; gap:8px; align-items:center;
+    background:var(--card-solid); border:1px solid var(--border);
+    padding:8px 16px; border-radius:999px; font-size:12.5px; font-weight:700; color:var(--ink-soft);
+    margin-bottom:16px;
+  }
+  .hero-left{text-align:left;}
+  .hero h1{ font-size: clamp(30px,4.4vw,46px); margin:0 0 14px; line-height:1.12; }
+  .hero h1 span{
+    background:var(--accent-grad); -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .hero p{ color:var(--ink-soft); font-size:16.5px; max-width:480px; margin:0 0 24px; }
+  .hero-ctas{display:flex; gap:14px; flex-wrap:wrap;}
+  .btn{
+    border:none; cursor:pointer; padding:14px 26px; border-radius:999px; font-weight:700; font-size:14.5px;
+    display:inline-flex; align-items:center; gap:8px; transition:.2s;
+  }
+  .btn-primary{ background:var(--accent-grad); color:#fff; box-shadow:0 10px 24px rgba(239,111,142,.35); }
+  .btn-primary:hover{ transform:translateY(-2px); }
+  .btn-ghost{ background:var(--card-solid); color:var(--ink); border:1px solid var(--border); }
+  .btn-ghost:hover{ transform:translateY(-2px); }
+
+  .mascot-card{
+    background:var(--card-solid); border:1px solid var(--border); border-radius:32px;
+    box-shadow:var(--shadow); padding:18px; display:flex; flex-direction:column; align-items:center; gap:6px;
+  }
+  .mascot-wrap{ width:200px; animation: bob 3.2s ease-in-out infinite; }
+  @keyframes bob{ 0%,100%{transform:translateY(0) rotate(0)} 50%{transform:translateY(-10px) rotate(-2deg)} }
+  .mascot-name{ font-family:'Fredoka',sans-serif; font-weight:700; font-size:15px; }
+  .mascot-role{ font-size:11.5px; color:var(--ink-soft); }
+
+  .section{ max-width:1140px; margin:0 auto; padding:30px 24px; }
+  .section-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:10px;}
+  .section-head h2{ font-size:25px; margin:0; }
+  .section-head p{ color:var(--ink-soft); margin:4px 0 0; font-size:13.5px;}
+
+  .filters{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
+  .chip{
+    border:1px solid var(--border); background:var(--card-solid); color:var(--ink-soft);
+    padding:8px 15px; border-radius:999px; font-size:13px; font-weight:700; cursor:pointer; transition:.2s;
+  }
+  .chip.active{ background:var(--accent-grad); color:#fff; border-color:transparent; }
+
+  .recipe-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(250px,1fr)); gap:18px; }
+  .recipe-card{
+    background:var(--card-solid); border:1px solid var(--border); border-radius:var(--radius);
+    overflow:hidden; box-shadow:var(--shadow); transition:.2s; cursor:pointer;
+  }
+  .recipe-card:hover{ transform:translateY(-5px) rotate(-.3deg); }
+  .recipe-thumb{ width:100%; height:110px; display:flex; align-items:center; justify-content:center; }
+  .recipe-thumb svg{ width:72px; height:72px; }
+  .recipe-card-body{ padding:16px 18px 18px; }
+  .recipe-card h3{ margin:0 0 8px; font-size:17.5px; }
+  .recipe-meta{ display:flex; gap:14px; font-size:12.5px; color:var(--ink-soft); margin-bottom:10px; flex-wrap:wrap;}
+  .recipe-tags{ display:flex; gap:6px; flex-wrap:wrap; }
+  .tag-pill{ background:var(--bg-2); color:var(--ink-soft); font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:999px; }
+  .empty-note{ color:var(--ink-soft); font-style:italic; padding:24px; text-align:center; }
+
+  footer{ text-align:center; padding:30px 20px; color:var(--ink-soft); font-size:12.5px; }
+
+  @media (max-width:880px){
+    .hero{ grid-template-columns:1fr; }
+    .hero-left{ text-align:center; }
+    .mascot-card{ max-width:240px; margin:0 auto; }
+  }
+  @media (max-width:760px){
+    #sidebar{ position:fixed; left:0; z-index:80; height:100vh; box-shadow:0 0 0 0; }
+    #sidebar:not(.collapsed){ width:88vw; max-width:340px; box-shadow:20px 0 40px rgba(0,0,0,.25); }
+    #sidebar.collapsed{ width:0; }
+    #sidebar.collapsed .sb-bottom-icons{ display:none; }
+    #mobile-sb-toggle{ display:inline-flex; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ================= SIDEBAR ================= -->
+  <aside id="sidebar">
+  <div class="sb-head">
+
+    <img
+      src="./ASSETS/Icons/cookie.png"
+      alt="CookieMice Logo"
+      class="mark"
+      onclick="newConversation()"
+      title="Start New Chat"
+    />
+
+    <div class="brandbox">
+      <div class="brand-name">CookieMice</div>
+      <div class="brand-tag">Your Cooking Companion</div>
+    </div>
+
+    <button
+      type="button"
+      class="sb-collapse-btn"
+      onclick="toggleSidebar()"
+      title="Collapse Sidebar"
+    >
+      ‹
+    </button>
+
+  </div>
+</aside>
+
+    <button class="sb-newchat" onclick="newConversation()">
+      <span>+</span><span class="label">New chat</span>
+    </button>
+
+    <div class="sb-section-label">Recent chats</div>
+    <div class="sb-history" id="sb-history"></div>
+
+    <div class="sb-chat-wrap">
+      <div class="sb-chat-head"><span class="dot"></span><span id="active-conv-title">New chat</span></div>
+      <div id="chat-body"></div>
+      <div class="chat-lang-row" id="chat-lang-row"></div>
+      <div id="chat-input-row">
+        <button class="round-btn mic" id="mic-btn" title="Voice input">●</button>
+        <input id="chat-input" placeholder="Ask Cookie something…" />
+        <button class="round-btn ghost" id="speaker-btn" title="Toggle voice replies">♪</button>
+        <button class="round-btn" id="send-btn" title="Send">➤</button>
+      </div>
+    </div>
+
+    <div class="sb-bottom-icons">
+      <button class="icon-btn" onclick="newConversation()" title="New chat">+</button>
+      <button class="icon-btn" id="theme-toggle-collapsed" title="Toggle theme">◐</button>
+    </div>
+  </aside>
+
+  <!-- ================= MAIN ================= -->
+  <div id="main">
+    <header class="topbar">
+      <div class="topbar-actions">
+        <select id="global-lang" class="lang-select" title="Choose your language"></select>
+        <button id="theme-toggle" class="icon-btn" title="Toggle theme">◐</button>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="hero-left">
+        <span class="pill">Multilingual · Voice-enabled · Free recipes</span>
+        <h1>Cook something <span>lovely</span> today</h1>
+        <p>Your friendly cooking companion. Ask for recipes, substitutions, or techniques — by voice or text — in English or your favourite Indian language.</p>
+        <div class="hero-ctas">
+          <button class="btn btn-primary" onclick="focusChat()">Start chatting</button>
+          <a href="#recipes" class="btn btn-ghost">Browse recipes</a>
+        </div>
+      </div>
+ <div class="mascot-card">
+  <div class="mascot-wrap">
+    <img
+      src="./ASSETS/Models/image.png"
+      alt="CookieMice Mascot"
+      class="mascot-image"
+    />
+  </div>
+
+  <div class="mascot-name">Cookie</div>
+  <div class="mascot-role">Your AI sous-chef</div>
+</div>
+    </section>
+
+    <section class="section" id="recipes">
+      <div class="section-head">
+        <div>
+          <h2>Recipe collection</h2>
+          <p>Filter by language and tag, or search by name.</p>
+        </div>
+        <input id="recipe-search" placeholder="Search recipes…" style="border:1px solid var(--border); border-radius:999px; padding:10px 16px; background:var(--card-solid); color:var(--ink); min-width:200px;">
+      </div>
+      <div class="filters" id="tag-filters"></div>
+      <div class="recipe-grid" id="recipe-grid"></div>
+    </section>
+
+    <footer>
+      Made with care by CookieMice · Supports English &amp; major Indian languages
+    </footer>
+  </div>
+</div>
+
+<script>
+const LANGUAGES = [
+  { name: "English",   code: "en-US" },
+  { name: "Hindi",      code: "hi-IN" },
+  { name: "Haryanvi",   code: "hi-IN" },
+  { name: "Punjabi",    code: "pa-IN" },
+  { name: "Marathi",    code: "mr-IN" },
+  { name: "Gujarati",   code: "gu-IN" },
+  { name: "Bengali",    code: "bn-IN" },
+  { name: "Tamil",      code: "ta-IN" },
+  { name: "Telugu",     code: "te-IN" },
+  { name: "Kannada",    code: "kn-IN" },
+  { name: "Malayalam",  code: "ml-IN" },
+  { name: "Urdu",       code: "ur-IN" },
+];
+
+const TAG_ICONS = {
+  curry: `<svg viewBox="0 0 64 64"><ellipse cx="32" cy="40" rx="24" ry="9" fill="#cf6a2e"/><path d="M10 38c0 9 10 16 22 16s22-7 22-16" fill="#ef8b3c"/><path d="M16 24c2-6 6-10 10-10M30 24c1-7 4-11 8-11M42 24c3-5 6-7 9-7" stroke="#bcdcd0" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`,
+  dessert: `<svg viewBox="0 0 64 64"><path d="M20 30h24l-3 22a4 4 0 01-4 4H27a4 4 0 01-4-4z" fill="#fcebd8"/><path d="M16 30c0-9 7-16 16-16s16 7 16 16" fill="#ef6f8e"/><circle cx="32" cy="12" r="4" fill="#ef8b3c"/></svg>`,
+  salad: `<svg viewBox="0 0 64 64"><ellipse cx="32" cy="42" rx="22" ry="10" fill="#f0d8b8"/><circle cx="22" cy="32" r="8" fill="#5fb6a4"/><circle cx="34" cy="26" r="9" fill="#79c9a8"/><circle cx="44" cy="33" r="7" fill="#5fb6a4"/><circle cx="32" cy="38" r="3" fill="#ef6f8e"/></svg>`,
+  bread: `<svg viewBox="0 0 64 64"><path d="M10 38c0-14 10-24 22-24s22 10 22 24-10 14-22 14-22 0-22-14z" fill="#e8a86b"/><path d="M22 24c2 4 2 8 0 12M32 20c2 5 2 10 0 15M42 24c2 4 2 8 0 12" stroke="#cf8a52" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>`,
+  drink: `<svg viewBox="0 0 64 64"><path d="M22 14h20l-4 36a4 4 0 01-4 4h-4a4 4 0 01-4-4z" fill="#fcebd8"/><path d="M20 14h24" stroke="#ef8b3c" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="32" r="4" fill="#ef6f8e"/></svg>`,
+  snack: `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="22" fill="#ef8b3c"/><circle cx="24" cy="26" r="3" fill="#fcebd8"/><circle cx="38" cy="24" r="2.4" fill="#fcebd8"/><circle cx="40" cy="38" r="3" fill="#fcebd8"/><circle cx="26" cy="40" r="2.2" fill="#fcebd8"/></svg>`,
+  default: `<svg viewBox="0 0 64 64"><ellipse cx="32" cy="40" rx="22" ry="9" fill="#ef8b3c"/><path d="M12 38c0 8 9 14 20 14s20-6 20-14" fill="#f0a868"/><path d="M18 24c2-6 6-10 10-10M32 24c1-7 4-11 8-11M44 24c2-5 5-7 8-7" stroke="#bcdcd0" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`,
+};
+
+function iconForRecipe(tags){
+  if (!tags || !tags.length) return TAG_ICONS.default;
+  const key = tags.map(t => String(t).toLowerCase()).find(t => TAG_ICONS[t]);
+  return TAG_ICONS[key] || TAG_ICONS.default;
+}
+
+let selectedLanguage = localStorage.getItem("cm-lang") || "English";
+let audioEnabled = true;
+let isRecording = false;
+let recognition = null;
+
+/* ---------------- Conversations (sidebar history) ---------------- */
+let conversations = JSON.parse(localStorage.getItem("cm-conversations") || "[]");
+let activeConvId = null;
+
+function saveConversations(){
+  localStorage.setItem("cm-conversations", JSON.stringify(conversations));
+}
+
+function newConversation(){
+  const conv = { id: "c" + Date.now(), title: "New chat", messages: [] };
+  conversations.unshift(conv);
+  activeConvId = conv.id;
+  saveConversations();
+  renderHistory();
+  renderActiveConversation();
+}
+
+function getActiveConv(){
+  return conversations.find(c => c.id === activeConvId);
+}
+
+function setActiveConv(id){
+  activeConvId = id;
+  renderHistory();
+  renderActiveConversation();
+}
+
+function deleteConv(id, evt){
+  evt.stopPropagation();
+  conversations = conversations.filter(c => c.id !== id);
+  saveConversations();
+  if (activeConvId === id){
+    activeConvId = conversations.length ? conversations[0].id : null;
+    if (!activeConvId) newConversation();
+  }
+  renderHistory();
+  renderActiveConversation();
+}
+
+function renderHistory(){
+  const wrap = document.getElementById("sb-history");
+  if (!conversations.length){
+    wrap.innerHTML = `<div class="sb-empty">No chats yet</div>`;
+    return;
+  }
+  wrap.innerHTML = conversations.map(c => `
+    <div class="sb-conv ${c.id===activeConvId?'active':''}" onclick="setActiveConv('${c.id}')">
+      <span>${c.title}</span>
+      <span class="del" onclick="deleteConv('${c.id}', event)">×</span>
+    </div>
+  `).join("");
+}
+
+function renderActiveConversation(){
+  const body = document.getElementById("chat-body");
+  const conv = getActiveConv();
+  document.getElementById("active-conv-title").textContent = conv ? conv.title : "New chat";
+  body.innerHTML = "";
+  if (!conv || conv.messages.length === 0){
+    addMessageToDOM("bot", "Hi, I'm Cookie, your cooking companion! Ask me about any recipe, ingredient swap, or kitchen tip — in any language below.", true);
+    return;
+  }
+  conv.messages.forEach(m => addMessageToDOM(m.role, m.html, true));
+}
+
+function addMessageToDOM(role, content, isHTML){
+  const body = document.getElementById("chat-body");
+  const div = document.createElement("div");
+  div.className = `msg ${role}`;
+  div.innerHTML = isHTML ? content : content.replace(/&/g,"&amp;").replace(/</g,"&lt;");
+  body.appendChild(div);
+  body.scrollTop = body.scrollHeight;
+  return div;
+}
+
+/* ---------------- Sidebar collapse ---------------- */
+function toggleSidebar(){
+  document.getElementById("sidebar").classList.toggle("collapsed");
+}
+
+function focusChat(){
+  if (document.getElementById("sidebar").classList.contains("collapsed")){
+    toggleSidebar();
+  }
+  document.getElementById("chat-input").focus();
+}
+
+/* ---------------- Theme ---------------- */
+const root = document.documentElement;
+function applyTheme(t){
+  root.setAttribute("data-theme", t);
+  localStorage.setItem("cm-theme", t);
+}
+applyTheme(localStorage.getItem("cm-theme") || "light");
+document.getElementById("theme-toggle").addEventListener("click", () => {
+  applyTheme(root.getAttribute("data-theme") === "dark" ? "light" : "dark");
+});
+document.getElementById("theme-toggle-collapsed").addEventListener("click", () => {
+  applyTheme(root.getAttribute("data-theme") === "dark" ? "light" : "dark");
+});
+
+/* ---------------- Language ---------------- */
+function buildGlobalLangSelect(){
+  const sel = document.getElementById("global-lang");
+  sel.innerHTML = LANGUAGES.map(l => `<option value="${l.name}" ${l.name===selectedLanguage?"selected":""}>${l.name}</option>`).join("");
+  sel.addEventListener("change", e => setLanguage(e.target.value));
+}
+
+function buildChatLangChips(){
+  const row = document.getElementById("chat-lang-row");
+  row.innerHTML = LANGUAGES.map(l => `<button class="chip ${l.name===selectedLanguage?"active":""}" data-lang="${l.name}">${l.name}</button>`).join("");
+  row.querySelectorAll(".chip").forEach(btn => {
+    btn.addEventListener("click", () => setLanguage(btn.dataset.lang));
+  });
+}
+
+function setLanguage(name){
+  selectedLanguage = name;
+  localStorage.setItem("cm-lang", name);
+  document.getElementById("global-lang").value = name;
+  document.querySelectorAll("#chat-lang-row .chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.lang === name);
+  });
+  if (recognition) recognition.lang = langMeta(name).code;
+  loadRecipes();
+}
+
+function langMeta(name){
+  return LANGUAGES.find(l => l.name === name) || LANGUAGES[0];
+}
+
+/* ---------------- Markdown ---------------- */
+function renderMarkdown(md){
+  let html = md
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/^### (.*)$/gim, "<h3>$1</h3>")
+    .replace(/^## (.*)$/gim, "<h2>$1</h2>")
+    .replace(/^&gt; (.*)$/gim, "<blockquote>$1</blockquote>")
+    .replace(/\*\*(.*?)\*\*/g, "<b>$1</b>")
+    .replace(/^\* (.*)$/gim, "<li>$1</li>")
+    .replace(/\n{2,}/g, "<br><br>")
+    .replace(/\n/g, "<br>");
+  html = html.replace(/(<li>.*?<\/li>(<br>)*)+/gs, m => `<ul>${m.replace(/<br>/g,"")}</ul>`);
+  return html;
+}
+
+function showTyping(){
+  const body = document.getElementById("chat-body");
+  const div = document.createElement("div");
+  div.className = "typing"; div.id = "typing-indicator";
+  div.innerHTML = "<span></span><span></span><span></span>";
+  body.appendChild(div);
+  body.scrollTop = body.scrollHeight;
+}
+function hideTyping(){
+  const t = document.getElementById("typing-indicator");
+  if (t) t.remove();
+}
+
+async function sendMessage(){
+  const input = document.getElementById("chat-input");
+  const question = input.value.trim();
+  if (!question) return;
+  input.value = "";
+
+  if (!activeConvId) newConversation();
+  const conv = getActiveConv();
+  if (conv.messages.length === 0){
+    conv.title = question.slice(0, 36) + (question.length > 36 ? "…" : "");
+  }
+  conv.messages.push({ role: "user", html: question.replace(/&/g,"&amp;").replace(/</g,"&lt;") });
+  addMessageToDOM("user", question);
+  saveConversations();
+  renderHistory();
+  showTyping();
+
+  try{
+    const res = await fetch("/api/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question, language: selectedLanguage })
+    });
+    const data = await res.json();
+    hideTyping();
+    const answer = data.answer || data.error || "Sorry, something went wrong.";
+    const html = renderMarkdown(answer);
+    conv.messages.push({ role: "bot", html });
+    saveConversations();
+    addMessageToDOM("bot", html, true);
+    if (audioEnabled) speak(answer.replace(/[#*>`_]/g,""));
+  }catch(err){
+    hideTyping();
+    const html = "Could not reach the server. Please make sure the backend is running.";
+    conv.messages.push({ role: "bot", html });
+    saveConversations();
+    addMessageToDOM("bot", html, true);
+  }
+}
+
+document.getElementById("send-btn").addEventListener("click", sendMessage);
+document.getElementById("chat-input").addEventListener("keydown", e => {
+  if (e.key === "Enter") sendMessage();
+});
+
+/* ---------------- Voice ---------------- */
+const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (SpeechRecognitionAPI){
+  recognition = new SpeechRecognitionAPI();
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.lang = langMeta(selectedLanguage).code;
+
+  recognition.onresult = (e) => {
+    document.getElementById("chat-input").value = e.results[0][0].transcript;
+  };
+  recognition.onend = () => setRecording(false);
+  recognition.onerror = () => setRecording(false);
+}
+
+function setRecording(state){
+  isRecording = state;
+  document.getElementById("mic-btn").classList.toggle("recording", state);
+}
+
+document.getElementById("mic-btn").addEventListener("click", () => {
+  if (!recognition){
+    alert("Voice input isn't supported in this browser. Try Chrome or Edge.");
+    return;
+  }
+  if (isRecording){
+    recognition.stop();
+    setRecording(false);
+  } else {
+    recognition.lang = langMeta(selectedLanguage).code;
+    recognition.start();
+    setRecording(true);
+  }
+});
+
+document.getElementById("speaker-btn").addEventListener("click", () => {
+  audioEnabled = !audioEnabled;
+  document.getElementById("speaker-btn").style.opacity = audioEnabled ? "1" : ".5";
+  if (!audioEnabled) window.speechSynthesis.cancel();
+});
+
+function speak(text){
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = langMeta(selectedLanguage).code;
+  utter.rate = 1.0;
+  window.speechSynthesis.speak(utter);
+}
+
+/* ---------------- Recipes ---------------- */
+let activeTag = "";
+async function loadRecipes(){
+  const grid = document.getElementById("recipe-grid");
+  grid.innerHTML = `<div class="empty-note">Loading recipes…</div>`;
+  try{
+    const search = document.getElementById("recipe-search").value.trim();
+    const params = new URLSearchParams({ language: selectedLanguage });
+    if (activeTag) params.set("tag", activeTag);
+    if (search) params.set("search", search);
+
+    const res = await fetch(`/api/recipes?${params.toString()}`);
+    const data = await res.json();
+    const recipes = data.recipes || [];
+
+    if (recipes.length === 0){
+      grid.innerHTML = `<div class="empty-note">No recipes yet for ${selectedLanguage}. Try another language or ask Cookie to suggest one!</div>`;
+      return;
+    }
+
+    grid.innerHTML = recipes.map(r => `
+      <div class="recipe-card" onclick='askAboutRecipe(${JSON.stringify(r.title)})'>
+        <div class="recipe-thumb">${iconForRecipe(r.tags)}</div>
+        <div class="recipe-card-body">
+          <h3>${r.title}</h3>
+          <div class="recipe-meta">
+            <span>${(r.prepTime||0)+(r.cookTime||0)} min</span>
+            <span>${r.servings || "-"} servings</span>
+          </div>
+          <div class="recipe-tags">${(r.tags||[]).map(t=>`<span class="tag-pill">${t}</span>`).join("")}</div>
+        </div>
+      </div>
+    `).join("");
+
+    buildTagFilters(recipes);
+  }catch(err){
+    grid.innerHTML = `<div class="empty-note">Could not load recipes. Is the backend server running?</div>`;
+  }
+}
+
+function buildTagFilters(recipes){
+  const tagsSet = new Set();
+  recipes.forEach(r => (r.tags||[]).forEach(t => tagsSet.add(t)));
+  const wrap = document.getElementById("tag-filters");
+  const tags = ["All", ...tagsSet];
+  wrap.innerHTML = tags.map(t => `<button class="chip ${ (t==="All" && !activeTag) || t===activeTag ? "active":"" }" data-tag="${t}">${t}</button>`).join("");
+  wrap.querySelectorAll(".chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      activeTag = chip.dataset.tag === "All" ? "" : chip.dataset.tag;
+      loadRecipes();
+    });
+  });
+}
+
+function askAboutRecipe(title){
+  focusChat();
+  document.getElementById("chat-input").value = `Tell me how to make ${title}`;
+  sendMessage();
+}
+
+document.getElementById("recipe-search").addEventListener("input", () => {
+  clearTimeout(window._searchTimer);
+  window._searchTimer = setTimeout(loadRecipes, 300);
+});
+
+/* ---------------- Init ---------------- */
+buildGlobalLangSelect();
+buildChatLangChips();
+loadRecipes();
+renderHistory();
+if (conversations.length){
+  activeConvId = conversations[0].id;
+}
+renderActiveConversation();
+</script>
+</body>
+</html>
