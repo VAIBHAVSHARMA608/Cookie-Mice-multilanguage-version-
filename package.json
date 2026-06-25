@@ -1,0 +1,20 @@
+{
+  "name": "cookiemice-assistant-backend",
+  "version": "1.0.0",
+  "description": "CookieMice — multilingual AI cooking assistant backend (Express + MongoDB + Gemini AI).",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "seed": "node seed.js"
+  },
+  "dependencies": {
+    "@google-cloud/speech": "^7.4.0",
+    "@google-cloud/text-to-speech": "^6.4.1",
+    "@google/generative-ai": "^0.21.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "init": "^0.1.2",
+    "mongoose": "^8.24.0",
+    "multer": "^1.4.5-lts.1"
+  }
+}
